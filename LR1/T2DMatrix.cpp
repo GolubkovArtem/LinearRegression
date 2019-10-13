@@ -26,6 +26,23 @@ T2DMatrix::T2DMatrix(size_t height, size_t width, float * matrix) {
 	}
 }
 
+T2DMatrix::T2DMatrix(size_t height, size_t width, const std::vector<float> & matrix) {
+	Height = height;
+	Width = width;
+	Transpose = false;
+	Matrix = new float *[Height];
+	for (size_t iterator = 0; iterator < Height; ++iterator) {
+		Matrix[iterator] = new float[Width];
+	}
+	if (matrix.size() != 0) {
+		for (size_t iterator = 0; iterator < Height; ++iterator) {
+			for (size_t iterator_2 = 0; iterator_2 < Width; ++iterator_2) {
+				Matrix[iterator][iterator_2] = matrix[iterator * Width + iterator_2];
+			}
+		}
+	}
+}
+
 T2DMatrix::T2DMatrix(const T2DMatrix & matrix) {
 	Height = matrix.Height;
 	Width = matrix.Width;
@@ -39,6 +56,22 @@ T2DMatrix::T2DMatrix(const T2DMatrix & matrix) {
 			(*this)(iterator, iterator_2) = matrix(iterator, iterator_2);
 		}
 	}
+}
+
+T2DMatrix & T2DMatrix::operator = (const T2DMatrix & matrix) {
+	Height = matrix.Height;
+	Width = matrix.Width;
+	Transpose = matrix.Transpose;
+	Matrix = new float *[Height];
+	for (size_t iterator = 0; iterator < Height; ++iterator) {
+		Matrix[iterator] = new float[Width];
+	}
+	for (size_t iterator = 0; iterator < GetHeight(); ++iterator) {
+		for (size_t iterator_2 = 0; iterator_2 < GetWidth(); ++iterator_2) {
+			(*this)(iterator, iterator_2) = matrix(iterator, iterator_2);
+		}
+	}
+	return *this;
 }
 
 void T2DMatrix::ChangeTranspose() {
@@ -97,6 +130,44 @@ T2DMatrix T2DMatrix::operator * (const T2DMatrix & matrix) const {
 	return result;
 }
 
+T2DMatrix T2DMatrix::BottomConcatenation(const T2DMatrix & matrix) {
+	if (GetWidth() != matrix.GetWidth()) {
+		T2DMatrix error(0, 0);
+		return error;
+		//error
+	}
+	if (matrix.GetHeight() != 0) {		
+		float ** buf_pointer = Matrix;
+		Matrix = new float *[GetHeight() + matrix.GetHeight()];
+		for (size_t iterator = 0; iterator < GetHeight() + matrix.GetHeight(); ++iterator) {
+			Matrix[iterator] = new float[GetWidth()];
+			for (size_t iterator_2 = 0; iterator_2 < GetWidth(); ++iterator_2) {
+				if (iterator < GetHeight()) {
+					if (Transpose == false) {
+						Matrix[iterator][iterator_2] = buf_pointer[iterator][iterator_2];
+					}
+					else {
+						Matrix[iterator][iterator_2] = buf_pointer[iterator_2][iterator];
+					}
+				}
+				else {
+					Matrix[iterator][iterator_2] = matrix(iterator - GetHeight(), iterator_2);
+				}
+			}
+		}
+		for (size_t iterator = 0; iterator < Height; ++iterator) {
+			delete[] buf_pointer[iterator];
+		}
+		delete[] buf_pointer;
+		if (Transpose == true) {
+			ChangeTranspose();
+			std::swap(Height, Width);
+		}
+		Height += matrix.GetHeight();
+	}
+	return *this;
+}
+
 T2DMatrix T2DMatrix::GetReverse() const {
 	if (GetHeight() != GetWidth()) {
 		T2DMatrix error(0, 0);
@@ -145,28 +216,58 @@ T2DMatrix T2DMatrix::GetReverse() const {
 	return identity;
 }
 
-T2DMatrix T2DMatrix::GetMinor(size_t row_num, size_t col_num) const {
-	return GetMinor(std::vector<size_t>{row_num}, std::vector<size_t>{col_num});
+T2DMatrix T2DMatrix::GetRectangleMinor(size_t row_first, size_t row_last, size_t col_first, size_t col_last, bool include) const {
+	std::vector<size_t> rows;
+	std::vector<size_t> columns;
+	for (size_t iterator = 0; iterator <= GetHeight(); ++iterator) {
+		if (iterator >= row_first && iterator <= row_last) {
+			rows.push_back(iterator);
+		}
+	}
+	for (size_t iterator = 0; iterator <= GetWidth(); ++iterator) {
+		if (iterator >= col_first && iterator <= col_last) {
+			columns.push_back(iterator);
+		}
+	}
+	return GetMinor(rows, columns, include);
 }
 
-T2DMatrix T2DMatrix::GetMinor(const std::vector<size_t> & row_nums, const std::vector<size_t> & col_nums) const {	
+T2DMatrix T2DMatrix::GetMinor(const std::vector<size_t> & row_nums, const std::vector<size_t> & col_nums, bool include) const {
 	std::vector<size_t> new_row_nums;
-	for (size_t iterator = 0; iterator < GetHeight(); ++iterator) {
-		new_row_nums.push_back(iterator);
-		for (auto & iterator_2 : row_nums) {
-			if (iterator_2 == iterator) {
-				new_row_nums.pop_back();
-				break;
+	if (include == false) {
+		for (size_t iterator = 0; iterator < GetHeight(); ++iterator) {
+			new_row_nums.push_back(iterator);
+			for (auto & iterator_2 : row_nums) {
+				if (iterator_2 == iterator) {
+					new_row_nums.pop_back();
+					break;
+				}
+			}
+		}
+	}
+	else {
+		for (auto & i : row_nums) {
+			if (i >= 0 && i < GetHeight()) {
+				new_row_nums.push_back(i);
 			}
 		}
 	}
 	std::vector<size_t> new_col_nums;
-	for (size_t iterator = 0; iterator < GetWidth(); ++iterator) {
-		new_col_nums.push_back(iterator);
-		for (auto & iterator_2 : col_nums) {
-			if (iterator_2 == iterator) {
-				new_col_nums.pop_back();
-				break;
+	if (include == false) {
+		for (size_t iterator = 0; iterator < GetWidth(); ++iterator) {
+			new_col_nums.push_back(iterator);
+			for (auto & iterator_2 : col_nums) {
+				if (iterator_2 == iterator) {
+					new_col_nums.pop_back();
+					break;
+				}
+			}
+		}
+	}
+	else {
+		for (auto & i : col_nums) {
+			if (i >= 0 && i < GetWidth()) {
+				new_col_nums.push_back(i);
 			}
 		}
 	}
@@ -203,3 +304,4 @@ void matrix_print(const T2DMatrix & matrix) {
 	}
 
 }
+

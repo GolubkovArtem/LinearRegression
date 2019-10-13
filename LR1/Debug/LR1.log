@@ -1,8 +1,2 @@
-﻿  ExtraFunctions.cpp
-  LR1.cpp
-c:\users\артём\source\repos\lr1\lr1\lr1.cpp(8): warning C4838: преобразование из "double" в "float" требует сужающего преобразования
-c:\users\артём\source\repos\lr1\lr1\lr1.cpp(8): warning C4305: инициализация: усечение из "double" в "float"
-  T2DMatrix.cpp
-c:\users\артём\source\repos\lr1\lr1\t2dmatrix.cpp(108): warning C4244: =: преобразование "double" в "float", возможна потеря данных
-  Создание кода...
+﻿  LR1.cpp
   LR1.vcxproj -> C:\Users\Артём\source\repos\LR1\Debug\LR1.exe
